@@ -1,0 +1,4 @@
+[submodule "OpenRadar"]
+	path = OpenRadar
+	url = https://github.com/PreSenseRadar/OpenRadar.git
+	branch = master
