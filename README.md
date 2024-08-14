@@ -76,24 +76,26 @@ $$
 
 Where:
 
-- $ \A $ : Amplitude of the transmitted signal.
+- A : Amplitude of the transmitted signal.
 
-- $ \f_c $ : Carrier frequency.
+- f_c  : Carrier frequency.
 
-- $ \t $ : Time.
+- t  : Time.
 
-- $ \phi_{tx} $ : Phase of the transmittedsignal.
+- phi_{tx}: Phase of the transmittedsignal.
 
 </ul>
 
 
 
 <ul>
+
 <li>The received signal after reflection will also be a sine wave with potential time delay and Doppler shift through a low noise amplifier (LNA) </li>
 
 $$
 S_{rx}(t) = A \sin\left(2\pi f_r (t - \tau) + \phi_{tx}\right)
 $$
+
 Where:
 
 - $ \ f_r $ : Frequency of the received signal.
@@ -105,6 +107,7 @@ Where:
 </ul>
 
 <ul>
+
 <li>Combining the Rx and TX into the mixer to generate the intermediate Frequency (IF) signal</li>
 
 $$
@@ -118,4 +121,7 @@ $$
 $$
 
 </ul>
+
+
+
 
