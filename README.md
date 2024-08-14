@@ -37,7 +37,7 @@
 
 ## Introduction
 
-<a href="[url](https://drive.google.com/drive/folders/1XOdPlMdZgRdOA13Nl3a8S_WuzcY_C4jY?usp=sharing)">Dataset_MMWave</a>
+<a href="https://drive.google.com/drive/folders/1XOdPlMdZgRdOA13Nl3a8S_WuzcY_C4jY?usp=sharing">Dataset_MMWave</a>
 
 <p align= "left">The electrocardiogram (ECG) is the standard diagnostic tool used in clinical medicine to measure various cardiac features. Commercially 
 available products have already achieved high-accuracy measurements using contact-based electrode devices. However, these products 
@@ -73,11 +73,14 @@ signals produced by these radars are easily captured for datasets </p>
 $$
 S_{tx}(t) = A \sin(2\pi f_c t + \phi_{tx})
 $$
-Where:
-- $ \ A $ : Amplitude of the transmitted signal.
-- $ \ f_c $ : Carrier frequency.
 
-- $ \ t $ : Time.
+Where:
+
+- $ \A $ : Amplitude of the transmitted signal.
+
+- $ \f_c $ : Carrier frequency.
+
+- $ \t $ : Time.
 
 - $ \phi_{tx} $ : Phase of the transmittedsignal.
 
