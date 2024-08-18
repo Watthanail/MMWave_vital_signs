@@ -3,7 +3,7 @@ from enum import Enum
 import numpy as np
 import struct
 import time
-
+import csv
 class CMD(Enum):
     RESET_FPGA_CMD_CODE = '0100'
     RESET_AR_DEV_CMD_CODE = '0200'
@@ -85,7 +85,7 @@ class DCA1000:
         self.last_frame = None
         self.lost_packets = None
         self.size_frame = None
-        self.frame_number = 1
+        self.packet_number = None
 
     def close(self):
         """Closes the sockets that are used for receiving and sending data"""
@@ -154,6 +154,7 @@ class DCA1000:
             data, addr = self.data_socket.recvfrom(MAX_PACKET_SIZE)
             packet_num = struct.unpack('<1l', data[:4])[0]
             packet_data = data[10:]
+            self.packet_number = packet_num
 
             # return packet_data,packet_num
 
@@ -173,7 +174,7 @@ class DCA1000:
 
             if packets_read == PACKETS_IN_FRAME_CLIPPED:
                 
-                # self.frame_number +=1
+                
                 completed_frame = ret_frame
                 ret_frame = next_frame
                 next_frame = bytearray(BYTES_IN_FRAME)
@@ -193,37 +194,77 @@ class DCA1000:
         return ret.reshape((num_chirps, num_rx, num_samples))
 
 
+    def save_to_csv(self,filename,data):
+        with open(filename,'w',newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Real','Imagine'])
+            for row in data :
+                writer.writerow([row.real,row.imag])
 
-# if __name__== "__main__":
+    def separate_tx(self,signal, num_tx, vx_axis=1, axis=0):
+        """Separate interleaved radar data from separate TX along a certain axis to account for TDM radars."""
+        reordering = np.arange(len(signal.shape))
+        reordering[0] = axis
+        reordering[axis] = 0
+        signal = signal.transpose(reordering)
+        out = np.concatenate([signal[i::num_tx, ...] for i in range(num_tx)], axis=vx_axis)
+        return out.transpose(reordering)
 
-#     dca = DCA1000(static_ip='192.168.33.30', adc_ip='192.168.33.180', data_port=4098, config_port=4096)
-#     dca.configure()
-#     start_time = time.time()
-
-#     while time.time() - start_time <= 8:
-#         adc_data = dca.read(0.1)
-#         frame = dca.organize(adc_data, 8, 8,64) # TX*RX
-    
-
-#     print(f"Completed Packet {adc_data}")
-#     response = dca.send_command(CMD.RECORD_STOP_CMD_CODE)
-    
-#     dca.close()
 
 if __name__== "__main__":
 
     dca = DCA1000(static_ip='192.168.33.30', adc_ip='192.168.33.180', data_port=4098, config_port=4096)
     dca.configure()
     start_time = time.time()
+    complex_frames=[]
 
-    with open('180824python_organizeadc01.bin', 'ab') as file:
+    # while time.time() - start_time <= 8:
+    #     adc_data = dca.read(0.1)
+    #     frame = dca.organize(adc_data, 8, 8,64) # TX*RX
+    #     complex_frames.append(frame.flatten())
+
+
+    # print(f"Completed Packet {adc_data}")
+    # response = dca.send_command(CMD.RECORD_STOP_CMD_CODE)
+    
+    # dca.close()
+
+
+#-------------------------------------------------------------------------------- 
+    # with open('180824python_bufferframeadc04.bin', 'ab') as file:
+    #     while time.time() - start_time <= 8:
+    #         adc_data=dca.read(0.1)
+    #         # frame = dca.organize(adc_data, 8, 8,64) # TX*RX
+    #         file.write(adc_data)
+
+#-------------------------------------------------------------------------------- 
+
+
+    with open('180824python_organizeadc03.bin', 'ab') as file:
         while time.time() - start_time <= 8:
-            adc_data,packnum=dca.read(0.1)
+            adc_data=dca.read(0.1)
             frame = dca.organize(adc_data, 8, 8,64) # TX*RX
             file.write(adc_data)
+            complex_frames.append(frame)
+
+#-------------------------------------------------------------------------------- 
+
 
     response = dca.send_command(CMD.RECORD_STOP_CMD_CODE)
-    print(packnum)
+    all_complex_data = np.concatenate(complex_frames)
+    # all_complex_data = np.concatenate(complex_frames, axis=0)
+    dca.save_to_csv('180824python_organizeadc03.csv', all_complex_data)
+    np.save('180824python_organizeadc03.npy', all_complex_data)
+
+    # Separate the TX antennas
+    num_tx = 2  # Set the number of transmit antennas
+    separated_data = dca.separate_tx(all_complex_data, num_tx=num_tx, vx_axis=1, axis=0)
+    # with open('180824python_Separateadc02.csv', 'w') as file:
+    #     np.savetxt(file, separated_data.view(float).reshape(-1, 2), delimiter=',', fmt='%f')
+    np.save('180824python_separatedadc03.npy', separated_data)
+
+    
+    print(f'Packnum : {dca.packet_number}')
     dca.close()
 
  
