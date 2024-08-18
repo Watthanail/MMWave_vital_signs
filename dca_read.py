@@ -86,6 +86,8 @@ class DCA1000:
         self.curr_buff = None
         self.last_frame = None
         self.lost_packets = None
+        self.num_packets = None
+        self.frame_number = 1
 
     def close(self):
         """Closes the sockets that are used for receiving and sending data"""
@@ -147,8 +149,8 @@ class DCA1000:
         self.data_socket.settimeout(timeout)
         ret_frame = bytearray(BYTES_IN_FRAME)
         next_frame = bytearray(BYTES_IN_FRAME)
-        packets_read = 0 
-        frame_number = 1
+        packets_read = 1 
+        
     
         while True:
             data, addr = self.data_socket.recvfrom(MAX_PACKET_SIZE)
@@ -158,6 +160,7 @@ class DCA1000:
             curr_idx = ((packet_num - 1)) % PACKETS_IN_FRAME_CLIPPED
             curr_array01 = curr_idx * BYTES_IN_PACKET
             curr_array02 = curr_array01 + len(packet_data)
+            
 
             if curr_array02 <= BYTES_IN_FRAME:
                 ret_frame[curr_array01:curr_array02] = packet_data
@@ -169,15 +172,31 @@ class DCA1000:
             packets_read +=1
 
             if packets_read == PACKETS_IN_FRAME_CLIPPED:
-                print(f"Completed Frame {frame_number}")
-                frame_number +=1
+                
+                # self.frame_number +=1
+                completed_frame = ret_frame
                 ret_frame = next_frame
                 next_frame = bytearray(BYTES_IN_FRAME)
-                packets_read = 0
+                packets_read = 1
 
-                return ret_frame
+                return completed_frame,packet_num
 
 
+
+# if __name__== "__main__":
+
+#     dca = DCA1000(static_ip='192.168.33.30', adc_ip='192.168.33.180', data_port=4098, config_port=4096)
+#     dca.configure()
+#     start_time = time.time()
+
+#     while time.time() - start_time <= 8:
+#         adc_data = dca.read(0.1)
+    
+
+#     print(f"Completed Packet {dca.frame_number} ,{dca.num_packets}")
+#     response = dca.send_command(CMD.RECORD_STOP_CMD_CODE)
+    
+#     dca.close()
 
 if __name__== "__main__":
 
@@ -185,10 +204,13 @@ if __name__== "__main__":
     dca.configure()
     start_time = time.time()
 
-    while time.time() - start_time <= 8:
-        adc_data = dca.read(0.1)
-    
+    with open('file4.bin', 'ab') as file:
+        while time.time() - start_time <= 8:
+            adc_data,packnum=dca.read(0.1)
+            file.write(adc_data)
+
     response = dca.send_command(CMD.RECORD_STOP_CMD_CODE)
-    
+    print(packnum)
     dca.close()
+
  
