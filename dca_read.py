@@ -26,14 +26,12 @@ class CMD(Enum):
 CONFIG_HEADER = '5AA5'
 CONFIG_FOOTER = 'AAEE'
 CONFIG_STATUS = '0000'
-ADC_PARAMS = {
-    'chirps': 128,
-    'rx': 4,
-    'tx': 3,
-    'samples': 128,
-    'IQ': 2,
-    'bytes': 2
-}
+ADC_PARAMS = {'chirps': 8,  # 32
+              'rx': 4,
+              'tx': 2,
+              'samples': 64,
+              'IQ': 2,
+              'bytes': 2}
 
 MAX_PACKET_SIZE = 4096
 BYTES_IN_PACKET = 1456
@@ -86,7 +84,7 @@ class DCA1000:
         self.curr_buff = None
         self.last_frame = None
         self.lost_packets = None
-        self.num_packets = None
+        self.size_frame = None
         self.frame_number = 1
 
     def close(self):
@@ -157,6 +155,8 @@ class DCA1000:
             packet_num = struct.unpack('<1l', data[:4])[0]
             packet_data = data[10:]
 
+            # return packet_data,packet_num
+
             curr_idx = ((packet_num - 1)) % PACKETS_IN_FRAME_CLIPPED
             curr_array01 = curr_idx * BYTES_IN_PACKET
             curr_array02 = curr_array01 + len(packet_data)
@@ -178,8 +178,19 @@ class DCA1000:
                 ret_frame = next_frame
                 next_frame = bytearray(BYTES_IN_FRAME)
                 packets_read = 1
+                # self.size_frame=len(completed_frame)
 
-                return completed_frame,packet_num
+                # convert frame to int
+                completed_frame = np.frombuffer(completed_frame, dtype=np.int16)
+
+                return completed_frame
+            
+
+    def organize(self,raw_frame, num_chirps, num_rx, num_samples):
+        ret = np.zeros(len(raw_frame) // 2, dtype=complex)
+        ret[0::2] = raw_frame[0::4] + 1j * raw_frame[2::4]
+        ret[1::2] = raw_frame[1::4] + 1j * raw_frame[3::4]
+        return ret.reshape((num_chirps, num_rx, num_samples))
 
 
 
@@ -191,9 +202,10 @@ class DCA1000:
 
 #     while time.time() - start_time <= 8:
 #         adc_data = dca.read(0.1)
+#         frame = dca.organize(adc_data, 8, 8,64) # TX*RX
     
 
-#     print(f"Completed Packet {dca.frame_number} ,{dca.num_packets}")
+#     print(f"Completed Packet {adc_data}")
 #     response = dca.send_command(CMD.RECORD_STOP_CMD_CODE)
     
 #     dca.close()
@@ -204,9 +216,10 @@ if __name__== "__main__":
     dca.configure()
     start_time = time.time()
 
-    with open('file4.bin', 'ab') as file:
+    with open('180824python_organizeadc01.bin', 'ab') as file:
         while time.time() - start_time <= 8:
             adc_data,packnum=dca.read(0.1)
+            frame = dca.organize(adc_data, 8, 8,64) # TX*RX
             file.write(adc_data)
 
     response = dca.send_command(CMD.RECORD_STOP_CMD_CODE)
